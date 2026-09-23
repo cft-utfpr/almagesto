@@ -2,67 +2,64 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <SiderealPlanets.h>
-#include "index.h"  // Pulls in your HTML file from the include folder
+#include "index.h"
 
-#define RGB_BUILTIN 8  // YD-ESP32-C3 onboard NeoPixel
+#define RGB_BUILTIN 8
+
+const int SERVO_PIN = 4;
 
 WebServer server(80);
 SiderealPlanets astro;
-
-void setRGB(uint8_t r, uint8_t g, uint8_t b) {
-  neopixelWrite(RGB_BUILTIN, r, g, b);
-}
 
 void handleRoot() {
   server.send(200, "text/html", index_html);
 }
 
-void handleSetColor() {
-  if (server.hasArg("r") && server.hasArg("g") && server.hasArg("b")) {
-    int r = server.arg("r").toInt();
-    int g = server.arg("g").toInt();
-    int b = server.arg("b").toInt();
-    setRGB(r, g, b);
-  }
-  server.sendHeader("Location", "/");
-  server.send(303);
-}
+void handleTarget() {
+  if (server.hasArg("ra") && server.hasArg("dec")) {
+    double ra = server.arg("ra").toDouble();
+    double dec = server.arg("dec").toDouble();
+    
+    astro.setLatLong(-25.4284, -49.2733); // Cwb
+    astro.setGMTdate(2026, 9, 19);        // 19/09/2026
+    astro.setGMTtime(23, 11, 0.0);        // 23:11
+    
+    astro.setRAdec(ra, dec);
+    astro.doRAdec2AltAz();
+    
+    double panAz = astro.getAzimuth();
+    double tiltAlt = astro.getAltitude();
 
-void testAstroMath(double ra, double dec) {
-  // Set coordinates for Curitiba, PR
-  astro.setLatLong(-25.4284, -49.2733);
-  
-  // Set current GMT date and time (Example: Sep 19, 2026, 23:11 GMT)
-  // Local time in Curitiba is UTC-3, so 20:11 local = 23:11 GMT
-  astro.setGMTdate(2026, 9, 19);
-  astro.setGMTtime(23, 11, 0.0);
-  
-  astro.setRAdec(ra, dec);
-  astro.doRAdec2AltAz();
-  
-  double panAz = astro.getAzimuth();
-  double tiltAlt = astro.getAltitude();
-  
-  Serial.printf("Target RA: %.3f, Dec: %.3f\n", ra, dec);
-  Serial.printf("Required Pan (Azimuth): %.2f degrees\n", panAz);
-  Serial.printf("Required Tilt (Altitude): %.2f degrees\n", tiltAlt);
+    Serial.printf("Received Target -> RA: %.2f, Dec: %.2f\n", ra, dec);
+    Serial.printf("Calculated      -> Pan: %.2f, Tilt: %.2f\n\n", panAz, tiltAlt);
+
+    neopixelWrite(RGB_BUILTIN, 0, 64, 0);
+    delay(100);
+    neopixelWrite(RGB_BUILTIN, 0, 0, 0);
+
+    String jsonResponse = "{\"pan\":" + String(panAz) + ", \"tilt\":" + String(tiltAlt) + "}";
+    server.send(200, "application/json", jsonResponse);
+  } else {
+    server.send(400, "text/plain", "Missing coordinates");
+  }
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(RGB_BUILTIN, OUTPUT);
-  setRGB(0, 0, 0);
 
+  pinMode(RGB_BUILTIN, OUTPUT);
+  neopixelWrite(RGB_BUILTIN, 0, 0, 0);
+
+  pinMode(SERVO_PIN, OUTPUT);
+
+  Serial.println("\n--- Starting Astro Tracker ---");
   WiFi.softAP("Almagesto-Control", "12345678");
-  Serial.print("Access Point started. IP Address: ");
+  Serial.print("Access Point ready. IP: ");
   Serial.println(WiFi.softAPIP());
 
   server.on("/", handleRoot);
-  server.on("/set", handleSetColor);
+  server.on("/target", handleTarget);
   server.begin();
-
-  // Test constellation targeting (Orion: RA = 5.582h, Dec = 0.30)
-  testAstroMath(5.582, 0.30);
 }
 
 void loop() {
