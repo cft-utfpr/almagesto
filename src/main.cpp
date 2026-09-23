@@ -6,8 +6,6 @@
 
 #define RGB_BUILTIN 8
 
-const int SERVO_PIN = 4;
-
 WebServer server(80);
 SiderealPlanets astro;
 
@@ -49,8 +47,6 @@ void setup() {
 
   pinMode(RGB_BUILTIN, OUTPUT);
   neopixelWrite(RGB_BUILTIN, 0, 0, 0);
-
-  pinMode(SERVO_PIN, OUTPUT);
 
   Serial.println("\n--- Starting Astro Tracker ---");
   WiFi.softAP("Almagesto-Control", "12345678");
