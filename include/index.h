@@ -3,26 +3,218 @@
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Astro Pan/Tilt Control</title>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #1a2333;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --border-color: #334155;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%);
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-color);
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+      font-weight: 300;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-size: 1.75rem;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 1.25rem;
+      background: var(--bg-color);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.5px;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .data-box, .status-box {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: rgba(11, 15, 25, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      text-align: left;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .data-box h2 {
+      font-size: 1rem;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .data-box p {
+      margin: 0.75rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+    }
+
+    .data-box span {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: monospace;
+      font-size: 1.2rem;
+    }
+
+    /* New SSE Status Box Styling */
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-secondary); /* Default offline color */
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.error {
+      background: var(--error);
+      box-shadow: 0 0 8px var(--error);
+    }
+
+    #liveStatus {
+      margin: 0;
+      font-family: monospace;
+      font-size: 1rem;
+      color: var(--accent);
+      min-height: 1.5rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+  </style>
 </head>
 <body>
-  <h1>Almagesto</h1>
-  
-  <select id="constSelect"></select>
-  <button onclick="calculateTarget()">Aim Tracker</button>
 
-  <br>
-  <div class="data-box" id="resultBox" style="display:none;">
-    <h2>Target Computed</h2>
-    <p><strong>Pan (Azimuth):</strong> <span id="panVal">--</span>&deg;</p>
-    <p><strong>Tilt (Altitude):</strong> <span id="tiltVal">--</span>&deg;</p>
+  <div class="container">
+    <h1>Almagesto</h1>
+    
+    <select id="constSelect"></select>
+    <button onclick="calculateTarget()">Aim Tracker</button>
+
+    <div class="data-box" id="resultBox" style="display:none;">
+      <h2>Target Computed</h2>
+      <p>Pan (Azimuth) <span id="panVal">--&deg;</span></p>
+      <p>Tilt (Altitude) <span id="tiltVal">--&deg;</span></p>
+    </div>
+
+    <!-- New SSE Live Status Box -->
+    <div class="status-box">
+      <div class="status-header">
+        <div class="status-dot" id="statusDot"></div> Live Status
+      </div>
+      <p id="liveStatus">Waiting for connection...</p>
+    </div>
   </div>
 
   <script>
-    // Complete 88 Constellations Database (RA in hours, Dec in degrees)
+    // Complete 88 Constellations Database
     const constellations = [
       {name: "Andromeda", ra: 0.8, dec: 37.4}, {name: "Antlia", ra: 10.3, dec: -32.5},
       {name: "Apus", ra: 16.1, dec: -75.3}, {name: "Aquarius", ra: 22.3, dec: -10.8},
@@ -70,7 +262,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       {name: "Volans", ra: 7.8, dec: -69.8}, {name: "Vulpecula", ra: 20.2, dec: 24.4}
     ];
 
-    // Populate dropdown alphabetically
+    // Populate dropdown
     const select = document.getElementById("constSelect");
     constellations.sort((a, b) => a.name.localeCompare(b.name)).forEach((c, index) => {
       let opt = document.createElement("option");
@@ -79,16 +271,48 @@ const char index_html[] PROGMEM = R"rawliteral(
       select.appendChild(opt);
     });
 
+    // --- Server-Sent Events (SSE) Implementation ---
+    const statusDot = document.getElementById("statusDot");
+    const liveStatus = document.getElementById("liveStatus");
+
+    // Connect to the ESP32 SSE endpoint
+    const evtSource = new EventSource("/events");
+
+    evtSource.onopen = () => {
+      statusDot.className = "status-dot connected";
+      liveStatus.innerText = "System ready. Awaiting target.";
+    };
+
+    // Listen for incoming plain-text messages
+    evtSource.onmessage = (event) => {
+      liveStatus.innerText = event.data;
+    };
+
+    evtSource.onerror = () => {
+      statusDot.className = "status-dot error";
+      liveStatus.innerText = "Connection lost. Reconnecting...";
+    };
+    // -----------------------------------------------
+
     // Send coordinates to ESP32 API
     function calculateTarget() {
       const target = constellations[select.value];
       
+      document.getElementById("panVal").innerHTML = "...";
+      document.getElementById("tiltVal").innerHTML = "...";
+      document.getElementById("resultBox").style.display = "block";
+
+      // Fire off the HTTP request to start movement
       fetch(`/target?ra=${target.ra}&dec=${target.dec}`)
         .then(response => response.json())
         .then(data => {
-          document.getElementById("resultBox").style.display = "block";
-          document.getElementById("panVal").innerText = data.pan.toFixed(2);
-          document.getElementById("tiltVal").innerText = data.tilt.toFixed(2);
+          document.getElementById("panVal").innerHTML = data.pan.toFixed(2) + "&deg;";
+          document.getElementById("tiltVal").innerHTML = data.tilt.toFixed(2) + "&deg;";
+        })
+        .catch(err => {
+          console.error("API error", err);
+          document.getElementById("panVal").innerHTML = "Error";
+          document.getElementById("tiltVal").innerHTML = "Error";
         });
     }
   </script>
