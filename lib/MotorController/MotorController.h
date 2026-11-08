@@ -2,6 +2,7 @@
 #define MOTOR_CONTROLLER_H
 
 #include <Arduino.h>
+#include <TMCStepper.h>
 
 enum class MotorAxis : uint8_t {
     ALTITUDE,
@@ -10,35 +11,43 @@ enum class MotorAxis : uint8_t {
 
 class MotorController {
 public:
-    MotorController(MotorAxis axis, uint8_t in1, uint8_t in2, uint8_t in3, uint8_t in4);
+    MotorController(MotorAxis axis, uint8_t step_pin, uint8_t dir_pin, uint8_t diag_pin, uint8_t driver_address);
+    ~MotorController();
 
-    // Configure motor
-    void begin();
+    // Inicializa o driver TMC2209 e ajusta os registos via UART
+    void begin(HardwareSerial* serial_port = &Serial1, uint16_t current_ma = 600);
 
-    // Step the motor until it stops
-    void calibrate();
+    // Executa o Sensorless Homing via StallGuard4 até detetar o batente mecânico
+    void calibrate(bool homing_direction = LOW);
 
-    // Step the motor to the target angle in degrees
-    int moveToAngle(double target_angle);
+    // Move o motor para o ângulo alvo em graus
+    int moveToAngle(double target_angle, uint32_t step_delay_us = 600);
+
+    // Getters de estado
+    double getCurrentAngle() const { return current_angle; }
+    bool isCalibrated() const { return calibrated; }
 
 private:
-    static constexpr uint16_t STEPS_PER_REV = 2048;
-    static constexpr uint8_t STEP_SEQUENCE[4][4] = {
-        {HIGH, LOW,  LOW,  LOW},
-        {LOW,  HIGH, LOW,  LOW},
-        {LOW,  LOW,  HIGH, LOW},
-        {LOW,  LOW,  LOW,  HIGH}
-    };
+    // NEMA 17 (200 passos/volta) * 16 micropassos = 3200 micropassos/volta
+    static constexpr uint16_t FULL_STEPS_PER_REV = 200;
+    static constexpr uint8_t MICROSTEPS = 16;
+    static constexpr uint32_t STEPS_PER_REV = FULL_STEPS_PER_REV * MICROSTEPS; // 3200
+
+    static constexpr float R_SENSE = 0.11f;
+    static constexpr uint8_t STALL_VALUE = 9; // Sensibilidade calibrada para a sua montagem
 
     MotorAxis axis;
-    uint8_t in1, in2, in3, in4;
+    uint8_t step_pin;
+    uint8_t dir_pin;
+    uint8_t diag_pin;
+    uint8_t driver_address;
+
+    TMC2209Stepper* driver = nullptr;
 
     bool calibrated = false;
     double current_angle = 0.0;
-    int32_t current_step;
 
-    void stopPins();
-    void step(int32_t step_number);
+    void stepPulse(uint32_t delay_us = 600);
     int32_t countSteps(double target_angle);
 };
 
