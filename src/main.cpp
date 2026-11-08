@@ -101,6 +101,9 @@ void handleTarget() {
 
     sendStatus("Sequência de alinhamento concluída com sucesso!");
     neopixelWrite(RGB_BUILTIN, 0, 0, 0); // Desliga LED
+
+    Serial.println("SNAP"); // Tira a foto
+
   } else {
     server.send(400, "text/plain", "Missing coordinates");
   }
