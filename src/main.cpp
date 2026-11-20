@@ -7,22 +7,20 @@
 
 #include "index.h"
 
-#define RGB_BUILTIN 8
-
 // --- BARRAMENTO UART PARTILHADO ---
-#define RX_PIN 10
-#define TX_PIN 1
+#define RX_PIN 16
+#define TX_PIN 17
 
 // --- MOTOR AZIMUTE (Motor 1 / Driver 0b00) ---
-#define AZM_STEP_PIN 3
-#define AZM_DIR_PIN  0
-#define AZM_DIAG_PIN 4
+#define AZM_STEP_PIN 25
+#define AZM_DIR_PIN  26
+#define AZM_DIAG_PIN 27
 #define AZM_ADDR     0b00
 
 // --- MOTOR ALTITUDE (Motor 2 / Driver 0b01) ---
-#define ALT_STEP_PIN 7
-#define ALT_DIR_PIN  6
-#define ALT_DIAG_PIN 5
+#define ALT_STEP_PIN 32
+#define ALT_DIR_PIN  33
+#define ALT_DIAG_PIN 14
 #define ALT_ADDR     0b01
 
 WebServer server(80);
@@ -84,8 +82,6 @@ void handleTarget() {
     Serial.printf("Alvo Recebido -> RA: %.2f, Dec: %.2f\n", ra, dec);
     Serial.printf("Calculado       -> Azimute (Pan): %.2f°, Altitude (Tilt): %.2f°\n\n", azimuth, altitude);
 
-    neopixelWrite(RGB_BUILTIN, 0, 64, 0); // Verde durante o cálculo
-
     String jsonResponse = "{\"pan\":" + String(azimuth) + ", \"tilt\":" + String(altitude) + "}";
     server.send(200, "application/json", jsonResponse);
 
@@ -93,14 +89,11 @@ void handleTarget() {
     sendStatus("Posição calculada. Rotacionando primeiro eixo (Azimute)...");
     azimuthMotor.moveToAngle(azimuth);
 
-    neopixelWrite(RGB_BUILTIN, 0, 0, 64); // Azul entre eixos
-
     // Movimentação Motor 2: Altitude
     sendStatus("Eixo Azimute alinhado. Rotacionando segundo eixo (Altitude)...");
     altitudeMotor.moveToAngle(altitude);
 
     sendStatus("Sequência de alinhamento concluída com sucesso!");
-    neopixelWrite(RGB_BUILTIN, 0, 0, 0); // Desliga LED
 
     Serial.println("SNAP"); // Tira a foto
 
@@ -111,9 +104,6 @@ void handleTarget() {
 
 void setup() {
   Serial.begin(115200);
-
-  pinMode(RGB_BUILTIN, OUTPUT);
-  neopixelWrite(RGB_BUILTIN, 0, 0, 0);
 
   Serial.println("\n--- Starting Astro Tracker (Almagesto) ---");
 
@@ -142,11 +132,6 @@ void setup() {
   server.on("/events", handleEvents);
   server.on("/target", handleTarget);
   server.begin();
-
-  // LED Flash de confirmação do sistema pronto
-  neopixelWrite(RGB_BUILTIN, 0, 0, 64);
-  delay(200);
-  neopixelWrite(RGB_BUILTIN, 0, 0, 0);
 }
 
 void loop() {
