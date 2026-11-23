@@ -19,9 +19,9 @@
 #define AZM_ADDR     0b00
 
 // --- MOTOR ALTITUDE (Motor 2 / Driver 0b10) ---
-#define ALT_STEP_PIN 32
-#define ALT_DIR_PIN  33
-#define ALT_DIAG_PIN 14
+#define ALT_STEP_PIN 25
+#define ALT_DIR_PIN  26
+#define ALT_DIAG_PIN 27
 #define ALT_RATIO    4
 #define ALT_ADDR     0b10
 
