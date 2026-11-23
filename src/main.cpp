@@ -8,20 +8,22 @@
 #include "index.h"
 
 // --- BARRAMENTO UART PARTILHADO ---
-#define RX_PIN 16
-#define TX_PIN 17
+#define RX_PIN 19
+#define TX_PIN 21
 
 // --- MOTOR AZIMUTE (Motor 1 / Driver 0b00) ---
-#define AZM_STEP_PIN 25
-#define AZM_DIR_PIN  26
-#define AZM_DIAG_PIN 27
+#define AZM_STEP_PIN 22
+#define AZM_DIR_PIN  23
+#define AZM_DIAG_PIN 4
+#define AZM_RATIO    6
 #define AZM_ADDR     0b00
 
-// --- MOTOR ALTITUDE (Motor 2 / Driver 0b01) ---
+// --- MOTOR ALTITUDE (Motor 2 / Driver 0b10) ---
 #define ALT_STEP_PIN 32
 #define ALT_DIR_PIN  33
 #define ALT_DIAG_PIN 14
-#define ALT_ADDR     0b01
+#define ALT_RATIO    4
+#define ALT_ADDR     0b10
 
 WebServer server(80);
 SiderealPlanets astro;
@@ -30,8 +32,8 @@ SiderealPlanets astro;
 WiFiClient sseClient;
 
 // Instanciação dos dois controladores de eixo
-MotorController azimuthMotor(MotorAxis::AZIMUTH, AZM_STEP_PIN, AZM_DIR_PIN, AZM_DIAG_PIN, AZM_ADDR);
-MotorController altitudeMotor(MotorAxis::ALTITUDE, ALT_STEP_PIN, ALT_DIR_PIN, ALT_DIAG_PIN, ALT_ADDR);
+MotorController azimuthMotor(MotorAxis::AZIMUTH, AZM_STEP_PIN, AZM_DIR_PIN, AZM_DIAG_PIN, AZM_ADDR, 6);
+MotorController altitudeMotor(MotorAxis::ALTITUDE, ALT_STEP_PIN, ALT_DIR_PIN, ALT_DIAG_PIN, ALT_ADDR, 4);
 
 // Função auxiliar para enviar mensagens SSE para a interface Web
 void sendStatus(String message) {

@@ -1,6 +1,7 @@
 #include "MotorController.h"
 
-MotorController::MotorController(MotorAxis axis, uint8_t step_pin, uint8_t dir_pin, uint8_t diag_pin, uint8_t driver_address) {
+MotorController::MotorController(MotorAxis axis, uint8_t step_pin, uint8_t dir_pin, uint8_t diag_pin, uint8_t driver_address, uint8_t gear_ratio) {
+    this->gear_ratio = gear_ratio;
     this->axis = axis;
     this->step_pin = step_pin;
     this->dir_pin = dir_pin;
@@ -27,14 +28,17 @@ void MotorController::begin(HardwareSerial* serial_port, uint16_t current_ma) {
     
     driver->begin();
     driver->toff(5);                   // Ativa os MOSFETs
+    driver->pdn_disable(true);         // use UART instead of PDN pin
+    driver->I_scale_analog(false);     // current set via UART
     driver->rms_current(current_ma);   // Corrente do NEMA 17 (ex: 600mA)
+    driver->mstep_reg_select(true);
     driver->microsteps(MICROSTEPS);    // Configura 1/16 micropassos por software
 
     // Configuração obrigatória do StallGuard4
     driver->en_spreadCycle(false);     // StealthChop2 ativo
     driver->pwm_autoscale(true);       // Autotuning PWM
     driver->TCOOLTHRS(0xFFFFF);        // Ativa StallGuard em qualquer velocidade
-    driver->SGTHRS(STALL_VALUE);       // Limiar de disparo (9)
+    driver->SGTHRS(STALL_VALUE);       // Limiar de disparo
 }
 
 void MotorController::stepPulse(uint32_t delay_us) {
@@ -49,7 +53,7 @@ void MotorController::calibrate(bool homing_direction) {
 
     // 1. Gira até o StallGuard detetar o bloqueio mecânico
     while (true) {
-        stepPulse(600);
+        stepPulse(400);
 
         uint16_t sg_result = driver->SG_RESULT();
         bool diag_state = digitalRead(diag_pin);
@@ -73,7 +77,7 @@ void MotorController::calibrate(bool homing_direction) {
 
 int32_t MotorController::countSteps(double target_angle) {
     double angle_variation = target_angle - current_angle;
-    double steps_per_degree = static_cast<double>(STEPS_PER_REV) / 360.0; // 3200 / 360 = ~8.888 passos/grau
+    double steps_per_degree = static_cast<double>(STEPS_PER_REV * gear_ratio) / 360.0; // 3200 / 360 = ~8.888 passos/grau
 
     return static_cast<int32_t>(angle_variation * steps_per_degree);
 }

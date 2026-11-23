@@ -11,7 +11,7 @@ enum class MotorAxis : uint8_t {
 
 class MotorController {
 public:
-    MotorController(MotorAxis axis, uint8_t step_pin, uint8_t dir_pin, uint8_t diag_pin, uint8_t driver_address);
+    MotorController(MotorAxis axis, uint8_t step_pin, uint8_t dir_pin, uint8_t diag_pin, uint8_t driver_address, uint8_t gear_ratio);
     ~MotorController();
 
     // Inicializa o driver TMC2209 e ajusta os registos via UART
@@ -34,9 +34,10 @@ private:
     static constexpr uint32_t STEPS_PER_REV = FULL_STEPS_PER_REV * MICROSTEPS; // 3200
 
     static constexpr float R_SENSE = 0.11f;
-    static constexpr uint8_t STALL_VALUE = 9; // Sensibilidade calibrada para a sua montagem
+    static constexpr uint8_t STALL_VALUE = 5; // Sensibilidade calibrada para a sua montagem
 
     MotorAxis axis;
+    uint8_t gear_ratio;
     uint8_t step_pin;
     uint8_t dir_pin;
     uint8_t diag_pin;
