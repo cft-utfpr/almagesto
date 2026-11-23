@@ -70,10 +70,19 @@ void handleTarget() {
 
     double ra = server.arg("ra").toDouble();
     double dec = server.arg("dec").toDouble();
+
+    Serial.printf("Alvo Recebido -> RA: %.2f, Dec: %.2f\n", ra, dec);
+
+    double t_ms = server.arg("time").toDouble();
+
+    time_t secs = (time_t)(t_ms / 1000.0);
+
+    struct tm utc;
+    gmtime_r(&secs, &utc);
     
     astro.setLatLong(-25.4284, -49.2733); // Curitiba
-    astro.setGMTdate(2026, 9, 19);        // Data de teste
-    astro.setGMTtime(23, 11, 0.0);        
+    astro.setGMTdate(utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday);
+    astro.setGMTtime(utc.tm_hour, utc.tm_min, utc.tm_sec);        
     
     astro.setRAdec(ra, dec);
     astro.doRAdec2AltAz();
@@ -81,7 +90,6 @@ void handleTarget() {
     double azimuth = astro.getAzimuth();
     double altitude = astro.getAltitude();
 
-    Serial.printf("Alvo Recebido -> RA: %.2f, Dec: %.2f\n", ra, dec);
     Serial.printf("Calculado       -> Azimute (Pan): %.2f°, Altitude (Tilt): %.2f°\n\n", azimuth, altitude);
 
     String jsonResponse = "{\"pan\":" + String(azimuth) + ", \"tilt\":" + String(altitude) + "}";

@@ -303,7 +303,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       document.getElementById("resultBox").style.display = "block";
 
       // Fire off the HTTP request to start movement
-      fetch(`/target?ra=${target.ra}&dec=${target.dec}`)
+      fetch(`/target?ra=${target.ra}&dec=${target.dec}&time=${Date.now()}`)
         .then(response => response.json())
         .then(data => {
           document.getElementById("panVal").innerHTML = data.pan.toFixed(2) + "&deg;";
