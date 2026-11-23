@@ -87,6 +87,12 @@ void handleTarget() {
     String jsonResponse = "{\"pan\":" + String(azimuth) + ", \"tilt\":" + String(altitude) + "}";
     server.send(200, "application/json", jsonResponse);
 
+    // Drop impossible requests
+    if (altitude < 0 || azimuth < 0) {
+      sendStatus("ERRO: Constelação fora da área visível");
+      return;
+    }
+
     // Movimentação Motor 1: Azimute
     sendStatus("Posição calculada. Rotacionando primeiro eixo (Azimute)...");
     azimuthMotor.moveToAngle(azimuth);
